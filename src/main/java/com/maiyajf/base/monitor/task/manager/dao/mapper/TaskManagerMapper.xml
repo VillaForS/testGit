@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.maiyajf.base.monitor.task.manager.dao.TaskManagerDAO">
+	<!-- 获取任务锁 -->
+	<select id="queryTaskLock" parameterType="java.util.Map" resultType="com.maiyajf.base.monitor.task.manager.po.TaskManagerPO">
+		SELECT SGUID ,
+		  STASKNUMBER ,
+		  STASKNAME ,
+		  ILOCKSTATUS ,
+		  DLOCKDATE ,
+		  DUNLOCKDATE ,
+		  IVALIDLOCKPERIOD ,
+		  SREMARK ,
+		  IVERSION ,
+		  IDELFLAG
+		FROM RW_TASKMANAGER
+		WHERE IDELFLAG                = 1
+		--AND (ILOCKSTATUS              = 0 --未锁定
+		--OR (sysdate-DLOCKDATE)*86400 >= NVL(IVALIDLOCKPERIOD,600)) --过了锁定有效期(如果没设值有效期则默认10分钟)
+		AND STASKNUMBER               = #{sTaskNumber}
+	</select>
+	<!-- 锁定任务 -->
+	<update id="lockTask" parameterType="java.util.Map">
+		UPDATE RW_TASKMANAGER
+		SET ILOCKSTATUS = 1,
+		  IVERSION      = IVERSION+1,
+		  DLOCKDATE     = sysdate
+		WHERE IDELFLAG  = 1
+		<if test="unlocked == true">
+			AND ILOCKSTATUS = 0
+		</if>
+		AND STASKNUMBER = #{sTaskNumber}
+		AND IVERSION    = #{iVersion}
+	</update>
+	<!-- 解锁任务 -->
+	<update id="unlockTask" parameterType="java.util.Map">
+		UPDATE RW_TASKMANAGER
+		SET ILOCKSTATUS = 0,
+		  DUNLOCKDATE   = sysdate
+		WHERE IDELFLAG  = 1
+		AND STASKNUMBER = #{sTaskNumber}
+	</update>
+</mapper>
